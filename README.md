@@ -47,7 +47,7 @@ https://qiita.com/JotaroS/items/1930f156aab953194c9a
 https://platformio.org/  
   
 ## ESP32-DevKitC開発環境の導入
-PlatformIOを起動し, 「Platformes」の検索窓で「ESP32」を検索します.  
+PlatformIOを起動し, 「Platformes」の検索窓で「Espressif」を検索します.  
   
 <img width="300" alt="GettingStarted_1" src="./docs/images/GettingStarted_1.png">
   
