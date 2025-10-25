@@ -136,7 +136,7 @@ ESP32's IP address => 192.168.xx.xx
   
 ## Meridian consoleの導入と起動
 ### Meridian consoleの導入  
-PC側のMeridain通信ソフトの一つである[Meridian console](https://github.com/Ninagawa123/Meridian_console)を起動します.    
+PC側のMeridain通信ソフトの一つである[Meridian console](https://github.com/s-kajita/Meridian_console)を起動します.    
 ダウンロードや導入の方法については下記のURLに従ってください.  
 https://github.com/Ninagawa123/Meridian_console  
 
