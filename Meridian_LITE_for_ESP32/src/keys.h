@@ -2,8 +2,8 @@
 #define __MERIDIAN_KEYS_H__
 
 // Wifiアクセスポイントの設定
-#define WIFI_AP_SSID  "Buffalo-G-B278" // アクセスポイントのWIFI_AP_SSID
-#define WIFI_AP_PASS  "kmcteuifcpumh"  // アクセスポイントのパスワード
+#define WIFI_AP_SSID  "" // アクセスポイントのWIFI_AP_SSID
+#define WIFI_AP_PASS  ""  // アクセスポイントのパスワード
 #define WIFI_SEND_IP  "192.168.11.3"   // 送り先のPCのIPアドレス（PCのIPアドレスを調べておく）
 #define UDP_SEND_PORT 22222            // 送り先のポート番号
 #define UDP_RECV_PORT 22224            // このESP32のポート番号
