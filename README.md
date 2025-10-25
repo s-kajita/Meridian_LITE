@@ -138,7 +138,7 @@ ESP32's IP address => 192.168.xx.xx
 ### Meridian consoleの導入  
 PC側のMeridain通信ソフトの一つである[Meridian console](https://github.com/s-kajita/Meridian_console)を起動します.    
 ダウンロードや導入の方法については下記のURLに従ってください.  
-https://github.com/Ninagawa123/Meridian_console  
+https://github.com/s-kajita/Meridian_console  
 
 さきほど書き留めた**ESP32's IP address**が必要となります.  
 
@@ -310,8 +310,8 @@ ESP32にヒートシンクをつけるのもよいですし, 扇風機で風を�
 サーボの初期位置などが未設定であるため, 起動時に関節があらぬ方向に回転し, 大きな負荷がかかる可能性がありますので注意してください.  
 初期位置の調整後, ロボットを吊るした状態などモーターへの負荷がほとんどない場合であれば, 全サーボオンが可能な場合があります.  
   
-ID紐付け, 回転方向・トリム調整は[Meridan_console](https://github.com/Ninagawa123/Meridian_console)で行うことができます.  
-設定方法は[Meridan_consoleのREADME](https://github.com/Ninagawa123/Meridian_console)に記載しています.  
+ID紐付け, 回転方向・トリム調整は[Meridan_console](https://github.com/s-kajita/Meridian_console)で行うことができます.  
+設定方法は[Meridan_consoleのREADME](https://github.com/s-kajita/Meridian_console)に記載しています.  
   
 [![dance](https://img.youtube.com/vi/Wfc9j4Pmr3E/0.jpg)](https://www.youtube.com/watch?v=Wfc9j4Pmr3E)  
   
