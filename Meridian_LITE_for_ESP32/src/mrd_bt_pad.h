@@ -33,7 +33,7 @@ constexpr unsigned short PAD_TABLE_KRC5FH_TO_COMMON[16] = { //
 uint64_t mrd_pad_read_krc(uint a_interval, IcsHardSerialClass &a_ics) {
   static uint64_t pre_val_tmp = 0; // 前回の値を保持する静的変数
   int8_t pad_analog_tmp[4] = {0};  // アナログ入力のデータ組み立て用
-  static int calib[4] = {0};       // アナログスティックのキャリブレーション値
+  // static int calib[4] = {0};       // アナログスティックのキャリブレーション値
 
   static unsigned long last_time_tmp = 0; // 最後に関数が呼ばれた時間を記録
   unsigned long current_time_tmp = millis();

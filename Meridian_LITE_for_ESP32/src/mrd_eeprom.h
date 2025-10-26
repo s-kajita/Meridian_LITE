@@ -31,8 +31,8 @@ bool mrd_eeprom_init(int a_eeprom_size) {
   if (EEPROM.begin(a_eeprom_size)) {
     return true;
   } else {
+    return false;
   }
-  return false;
 }
 
 /// @brief サーボ設定構造体からEEPROM格納用の配列データを作成する
@@ -132,12 +132,17 @@ bool mrd_eeprom_load_servosettings(ServoParam &a_sv, bool a_monitor, HardwareSer
   return true;
 }
 
+int mrd_eeprom_length() {
+  return EEPROM.length();
+}
+
 /// @brief EEPROM格納用の配列データをシリアルにダンプ出力する.
 /// @param a_data EEPROM用の配列データ.
 /// @param a_bhd ダンプリストの表示形式.(0:Bin, 1:Hex, 2:Dec)
 /// @return 終了時にtrueを返す.
 bool mrd_eeprom_dump_to_serial(UnionEEPROM a_data, int a_bhd, HardwareSerial &a_serial) {
-  int len_tmp = EEPROM.length(); // EEPROMの長さ
+  // int len_tmp = EEPROM.length(); // EEPROMの長さ　EEPROM.length()は常に0を返す
+  int len_tmp = EEPROM_SIZE; // EEPROMのサイズ
   a_serial.print("EEPROM Length ");
   a_serial.print(len_tmp); // EEPROMの長さ表示
   a_serial.println("byte, 16bit Dump;");
@@ -190,11 +195,13 @@ bool mrd_eeprom_write(UnionEEPROM a_write_data, bool a_flg_protect, HardwareSeri
   bool flg_renew_tmp = false;           // 書き込みコミットを実施するかのフラグ
   for (int i = 0; i < EEPROM_SIZE; i++) // データを書き込む時はbyte型
   {
+#if 0
     if (i >= EEPROM.length()) // EEPROMのサイズを超えないようチェック
     {
       Serial.println("Error: EEPROM address out of range.");
       return false;
     }
+#endif
     old_value_tmp = EEPROM.read(i);
     // 書き込みデータがEEPROM内のデータと違う場合のみ書き込みをセット
     if (old_value_tmp != a_write_data.bval[i]) {
@@ -202,6 +209,13 @@ bool mrd_eeprom_write(UnionEEPROM a_write_data, bool a_flg_protect, HardwareSeri
       flg_renew_tmp = true;
     }
   }
+#if 0
+  if (EEPROM.length() == 0) {
+    //
+    Serial.println("EEPROM.length()=0: Force writing");
+    flg_renew_tmp = true;
+  }
+#endif
 
   if (true) {
     for (int i = 0; i < 15; i++) { // データを書き込む時はbyte型

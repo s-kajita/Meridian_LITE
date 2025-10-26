@@ -1,7 +1,7 @@
 #ifndef __MERIDIAN_LITE_MAIN__
 #define __MERIDIAN_LITE_MAIN__
 
-#define VERSION "Meridian_LITE_v1.1.1_2025_08.22" // バージョン表示
+#define VERSION "Meridian_LITE_v1.1.1_2025_08.22(kajita)" // バージョン表示
 
 /// @file    Meridian_LITE_for_ESP32/src/main.cpp
 /// @brief   Meridian is a system that smartly realizes the digital twin of a robot.
@@ -78,6 +78,16 @@ void setup() {
   // 起動メッセージの表示(バージョン, PC-USB,SPI0,i2c0のスピード)
   mrd_disp.hello_lite_esp(VERSION, SERIAL_PC_BPS, SPI0_SPEED, I2C0_SPEED);
 
+  // EEPROMの開始
+  Serial.print("Initializing EEPROM... ");
+  if (mrd_eeprom_init(EEPROM_SIZE)) { // EEPROMの初期化
+    Serial.println("OK");
+  } else {
+    Serial.println("Failed");
+  }
+  Serial.print("EEPROM.length()=");
+  Serial.println(mrd_eeprom_length());
+
   // サーボ値の初期設定
   sv.num_max = max(mrd_max_used_index(IXL_MT, IXL_MAX),  //
                    mrd_max_used_index(IXR_MT, IXR_MAX)); // サーボ処理回数
@@ -106,14 +116,6 @@ void setup() {
   // マウントされたサーボIDの表示
   mrd_disp.servo_mounts_2lines(sv);
 
-  // EEPROMの開始
-  Serial.print("Initializing EEPROM... ");
-  if (mrd_eeprom_init(EEPROM_SIZE)) { // EEPROMの初期化
-    Serial.println("OK");
-  } else {
-    Serial.println("Failed");
-  }
-
   // EEPROMにconfigのサーボ設定値を書き込む場合
   if (EEPROM_SET) {
     Serial.println("Set EEPROM data from config.");
@@ -122,7 +124,7 @@ void setup() {
         mrd_eeprom_write(mrd_eeprom_make_data_from_config(sv), EEPROM_PROTECT, Serial)) {
       Serial.println("Write EEPROM succeed.");
     } else {
-      Serial.println("Write EEPROM failed.");
+      Serial.println("Didn't write EEPROM.");
     };
   }
 
@@ -135,8 +137,7 @@ void setup() {
   mrd_eeprom_dump_at_boot(EEPROM_DUMP, EEPROM_STYLE, Serial); //
 
   // EEPROMのリードライトテスト
-  // mrd_eeprom_write_read_check(mrd_eeprom_make_data_from_config(),
-  //                             CHECK_EEPROM_RW, EEPROM_PROTECT, EEPROM_STYLE);
+  // mrd_eeprom_write_read_check(mrd_eeprom_make_data_from_config(sv), CHECK_EEPROM_RW, EEPROM_PROTECT, EEPROM_STYLE);
 
   // SDカードの初期設定とチェック
   mrd_sd_init(MOUNT_SD, PIN_CHIPSELECT_SD);
@@ -233,7 +234,8 @@ void loop() {
       unsigned long current_tmp = millis();
       if (current_tmp - start_tmp >= UDP_TIMEOUT) {
         if (millis() > MONITOR_SUPPRESS_DURATION) { // 起動直後はエラー表示を抑制
-          Serial.println("UDP timeout");
+          // Serial.println(current_tmp - start_tmp);
+          //  Serial.println("UDP timeout");
         }
         flg.udp_rcvd = false;
         break;
