@@ -123,7 +123,7 @@
 #define MRD_SERVO_SLOTS 15  // Meridim配列の1系統あたりの最大接続サーボ数(デフォルトは15)
 
 // 各種ハードウェアのマウント有無
-#define MOUNT_SD      1           // SDカードリーダーの有無s(0:なし, 1:あり)
+#define MOUNT_SD      0           // SDカードリーダーの有無s(0:なし, 1:あり)
 #define MOUNT_IMUAHRS BNO055_AHRS // IMU/AHRSの搭載 NO_IMU, MPU6050_IMU, MPU9250_IMU, BNO055_AHRS
 #define MOUNT_PAD     PC          // ジョイパッドの搭載 PC, MERIMOTE, BLUERETRO, KRR5FH, WIIMOTE
 
@@ -138,9 +138,9 @@
 
 // EEPROMの設定　(EEPROMの読み書きを止めるとモータ角度が表示されるようになった)
 #define EEPROM_SIZE    540 // 使用するEEPROMのサイズ(バイト)
-#define EEPROM_SET     1   // 起動時にEEPROMにconfig.hの内容をセット(mrd_set_eeprom)
+#define EEPROM_SET     0   // 起動時にEEPROMにconfig.hの内容をセット(mrd_set_eeprom)
 #define EEPROM_PROTECT 0   // EEPROMの書き込み保護(0:保護しない, 1:書き込み禁止)
-#define EEPROM_LOAD    0   // 起動時にEEPROMの内容を諸設定にロードする
+#define EEPROM_LOAD    1   // 起動時にEEPROMの内容を諸設定にロードする
 #define EEPROM_DUMP    1   // 起動時のEEPROM内容のダンプ表示
 #define EEPROM_STYLE   Dec // 起動時のEEPROM内容のダンプ表示の書式(Bin,Hex,Dec)
 

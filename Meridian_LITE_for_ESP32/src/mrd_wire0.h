@@ -73,6 +73,14 @@ bool mrd_wire0_init_bno055(AhrsValue &a_ahrs) {
     delay(50);
     a_ahrs.bno.setExtCrystalUse(false);
     delay(10);
+
+    // KHR-3HVに垂直に取付けたBNO05
+    Serial.println("Remap BNO055 axes.");
+    a_ahrs.bno.setAxisRemap((Adafruit_BNO055::adafruit_bno055_axis_remap_config_t)0x12);
+    delay(10);
+    a_ahrs.bno.setAxisSign((Adafruit_BNO055::adafruit_bno055_axis_remap_sign_t)0x03);
+    delay(10);
+
     return true;
   }
   // データの取得はセンサー用スレッドで実行
@@ -116,67 +124,71 @@ bool mrd_wire0_setup(ImuAhrsType a_imuahrs_type, int a_i2c0_speed, AhrsValue &a_
 //  センサデータの取得処理
 //------------------------------------------------------------------------------------
 
+/// @brief bno055のデータ取得.
+void read_bno055() {
+  // 加速度センサ値の取得と表示 - VECTOR_ACCELEROMETER - m/s^2
+  imu::Vector<3> accelerometer = ahrs.bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+  ahrs.read[0] = (float)accelerometer.x();
+  ahrs.read[1] = (float)accelerometer.y();
+  ahrs.read[2] = (float)accelerometer.z();
+
+  // ジャイロセンサ値の取得 - VECTOR_GYROSCOPE - rad/s
+  imu::Vector<3> gyroscope = ahrs.bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
+  ahrs.read[3] = gyroscope.x();
+  ahrs.read[4] = gyroscope.y();
+  ahrs.read[5] = gyroscope.z();
+
+  // 磁力センサ値の取得と表示  - VECTOR_MAGNETOMETER - uT
+  imu::Vector<3> magnetometer = ahrs.bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
+  ahrs.read[6] = magnetometer.x();
+  ahrs.read[7] = magnetometer.y();
+  ahrs.read[8] = magnetometer.z();
+
+  // センサフュージョンによる方向推定値の取得と表示 - VECTOR_EULER - degrees
+  imu::Vector<3> euler = ahrs.bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+  ahrs.read[12] = euler.y();                   // DMP_ROLL推定値
+  ahrs.read[13] = euler.z();                   // DMP_PITCH推定値
+  ahrs.yaw_source = euler.x();                 // ヨー軸のソースデータ保持
+  float yaw_tmp = euler.x() - ahrs.yaw_origin; // DMP_YAW推定値
+  if (yaw_tmp >= 180) {
+    yaw_tmp = yaw_tmp - 360;
+  } else if (yaw_tmp < -180) {
+    yaw_tmp = yaw_tmp + 360;
+  }
+  ahrs.read[14] = yaw_tmp; // DMP_YAW推定値
+  ahrs.ypr[0] = ahrs.read[14];
+  ahrs.ypr[1] = ahrs.read[13];
+  ahrs.ypr[2] = ahrs.read[12];
+
+  // センサフュージョンの方向推定値のクオータニオン
+  // imu::Quaternion quat = bno.getQuat();
+
+  // Serial.print("qW: ");
+  // Serial.print(quat.w(), 4);
+  // Serial.print(" qX: ");
+  // Serial.print(quat.x(), 4);
+  // Serial.print(" qY: ");
+  // Serial.print(quat.y(), 4);
+  // Serial.print(" qZ: ");
+  // Serial.println(quat.z(), 4);
+
+  // キャリブレーションのステータスの取得と表示
+  // uint8_t system, gyro, accel, mag = 0;
+  // bno.getCalibration(&system, &gyro, &accel, &mag);
+  // Serial.print("CALIB Sys:");
+  // Serial.print(system, DEC);
+  // Serial.print(", Gy");
+  // Serial.print(gyro, DEC);
+  // Serial.print(", Ac");
+  // Serial.print(accel, DEC);
+  // Serial.print(", Mg");
+  // Serial.println(mag, DEC);
+}
+
 /// @brief bno055からI2C経由でデータを読み取るスレッド用関数. IMUAHRS_INTERVALの間隔で実行する.
 void mrd_wire0_Core0_bno055_r(void *args) {
   while (1) {
-    // 加速度センサ値の取得と表示 - VECTOR_ACCELEROMETER - m/s^2
-    imu::Vector<3> accelerometer = ahrs.bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
-    ahrs.read[0] = (float)accelerometer.x();
-    ahrs.read[1] = (float)accelerometer.y();
-    ahrs.read[2] = (float)accelerometer.z();
-
-    // ジャイロセンサ値の取得 - VECTOR_GYROSCOPE - rad/s
-    imu::Vector<3> gyroscope = ahrs.bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
-    ahrs.read[3] = gyroscope.x();
-    ahrs.read[4] = gyroscope.y();
-    ahrs.read[5] = gyroscope.z();
-
-    // 磁力センサ値の取得と表示  - VECTOR_MAGNETOMETER - uT
-    imu::Vector<3> magnetometer = ahrs.bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
-    ahrs.read[6] = magnetometer.x();
-    ahrs.read[7] = magnetometer.y();
-    ahrs.read[8] = magnetometer.z();
-
-    // センサフュージョンによる方向推定値の取得と表示 - VECTOR_EULER - degrees
-    imu::Vector<3> euler = ahrs.bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-    ahrs.read[12] = euler.y();                   // DMP_ROLL推定値
-    ahrs.read[13] = euler.z();                   // DMP_PITCH推定値
-    ahrs.yaw_source = euler.x();                 // ヨー軸のソースデータ保持
-    float yaw_tmp = euler.x() - ahrs.yaw_origin; // DMP_YAW推定値
-    if (yaw_tmp >= 180) {
-      yaw_tmp = yaw_tmp - 360;
-    } else if (yaw_tmp < -180) {
-      yaw_tmp = yaw_tmp + 360;
-    }
-    ahrs.read[14] = yaw_tmp; // DMP_YAW推定値
-    ahrs.ypr[0] = ahrs.read[14];
-    ahrs.ypr[1] = ahrs.read[13];
-    ahrs.ypr[2] = ahrs.read[12];
-
-    // センサフュージョンの方向推定値のクオータニオン
-    // imu::Quaternion quat = bno.getQuat();
-
-    // Serial.print("qW: ");
-    // Serial.print(quat.w(), 4);
-    // Serial.print(" qX: ");
-    // Serial.print(quat.x(), 4);
-    // Serial.print(" qY: ");
-    // Serial.print(quat.y(), 4);
-    // Serial.print(" qZ: ");
-    // Serial.println(quat.z(), 4);
-
-    // キャリブレーションのステータスの取得と表示
-    // uint8_t system, gyro, accel, mag = 0;
-    // bno.getCalibration(&system, &gyro, &accel, &mag);
-    // Serial.print("CALIB Sys:");
-    // Serial.print(system, DEC);
-    // Serial.print(", Gy");
-    // Serial.print(gyro, DEC);
-    // Serial.print(", Ac");
-    // Serial.print(accel, DEC);
-    // Serial.print(", Mg");
-    // Serial.println(mag, DEC);
-
+    read_bno055();
     delay(IMUAHRS_INTERVAL);
   }
 }

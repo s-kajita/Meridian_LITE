@@ -98,8 +98,10 @@ void setup() {
     sv.ixr_id[i] = IXR_ID[i];
     sv.ixl_cw[i] = IXL_CW[i];
     sv.ixr_cw[i] = IXR_CW[i];
-    sv.ixl_trim[i] = IDL_TRIM[i];
-    sv.ixr_trim[i] = IDR_TRIM[i];
+    sv.ixl_trim[i] = 0.0;
+    sv.ixr_trim[i] = 0.0;
+    // sv.ixl_trim[i] = IDL_TRIM[i];
+    // sv.ixr_trim[i] = IDR_TRIM[i];
   };
 
   // サーボUARTの通信速度の表示
@@ -146,12 +148,14 @@ void setup() {
   // I2Cの初期化と開始
   mrd_wire0_setup(BNO055_AHRS, I2C0_SPEED, ahrs, PIN_I2C0_SDA, PIN_I2C0_SCL);
 
+#if 0
   // I2Cスレッドの開始
   if (MOUNT_IMUAHRS == BNO055_AHRS) {
     xTaskCreatePinnedToCore(mrd_wire0_Core0_bno055_r, "Core0_bno055_r", 4096, NULL, 2, &thp[0], 0);
     Serial.println("Core0 thread for BNO055 start.");
     delay(10);
   }
+#endif
 
   // WiFiの初期化と開始
   mrd_disp.esp_wifi(WIFI_AP_SSID);
@@ -304,6 +308,7 @@ void loop() {
   //------------------------------------------------------------------------------------
   mrd.monitor_check_flow("[4]", monitor.flow); // デバグ用フロー表示
 
+  read_bno055();
   // @[4-1] センサ値のMeridimへの転記
   meriput90_ahrs(s_udp_meridim, ahrs.read, MOUNT_IMUAHRS); // BNO055_AHRS
 
