@@ -264,7 +264,7 @@ bool execute_master_command_3(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
   if (a_meridim.sval[MRD_MASTER] == MCMD_START_TRIM_SETTING) {
 
     // EEPROMのデータを展開する
-    mrd_eeprom_load_servosettings(a_sv, true, Serial);
+    //mrd_eeprom_load_servosettings(a_sv, true, Serial);    // すでにStart Trim Setting している場合不連続な動作が発生する
 
     #if 0
     // サーボをEEPROMのTRIM値で補正されたHOME(原点)に移動する
