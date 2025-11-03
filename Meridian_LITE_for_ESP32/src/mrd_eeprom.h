@@ -84,6 +84,41 @@ UnionEEPROM mrd_eeprom_read() {
   return read_data_tmp;
 }
 
+
+/// @brief サーボ値構造体の表示.
+/// @param a_sv サーボ設定を保持する構造体.
+/// @param a_monitor シリアルモニタへのデータ表示.
+/// @param a_serial 出力先シリアルの指定.
+/// @return 終了時にtrueを返す.
+bool print_servosettings(ServoParam &a_sv, HardwareSerial &a_serial) {
+  for (int i = 0; i < a_sv.num_max; i++) {
+    a_serial.print("L-idx:");
+    a_serial.print(mrd_pddstr(sv.ixl_id[i], 2, 0, false));
+    //a_serial.print(", mt:");
+    //a_serial.print(mrd_pddstr(sv.ixl_mount[i], 1, 0, false));
+    a_serial.print(", cw:");
+    a_serial.print(mrd_pddstr(sv.ixl_cw[i], 1, 0, true));
+    a_serial.print(", trm:");
+    a_serial.print(mrd_pddstr(sv.ixl_trim[i], 7, 2, true));
+    a_serial.print(", tgt:");
+    a_serial.print(mrd_pddstr(sv.ixl_tgt[i], 7, 2, true));
+
+    a_serial.print(" | R-idx:");
+    a_serial.print(mrd_pddstr(sv.ixr_id[i], 2, 0, false));
+    //a_serial.print(", mt:");
+    //a_serial.print(mrd_pddstr(sv.ixr_mount[i], 1, 0, false));
+    a_serial.print(", cw:");
+    a_serial.print(mrd_pddstr(sv.ixr_cw[i], 1, 0, true));
+    a_serial.print(", trm:");
+    a_serial.print(mrd_pddstr(sv.ixr_trim[i], 7, 2, true));
+    a_serial.print(", tgt:");
+    a_serial.println(mrd_pddstr(sv.ixr_tgt[i], 7, 2, true));
+ }
+
+  return true;
+}
+
+
 /// @brief EEPROMの内容を読み込みサーボ値構造体に反映する.
 /// @param a_sv サーボ設定を保持する構造体.
 /// @param a_monitor シリアルモニタへのデータ表示.
@@ -117,7 +152,7 @@ bool mrd_eeprom_load_servosettings(ServoParam &a_sv, bool a_monitor, HardwareSer
       a_serial.print(mrd_pddstr(sv.ixl_cw[i], 1, 0, true));
       a_serial.print(", trm:");
       a_serial.print(mrd_pddstr(sv.ixl_trim[i], 7, 2, true));
-      a_serial.print("  R-idx: ");
+      a_serial.print(" | R-idx: ");
       a_serial.print(mrd_pddstr(i, 2, 0, false));
       a_serial.print(", id:");
       a_serial.print(mrd_pddstr(sv.ixr_id[i], 2, 0, false));

@@ -13,6 +13,53 @@
 //  コマンド処理
 //==================================================================================================
 
+/// @brief 現在のポーズをトリム値として設定する
+/// @param a_meridim 実行したいコマンドの入ったMeridim配列.(参照渡し)
+/// @param a_sv サーボパラメータの構造体.(参照渡し)
+/// @return コマンドを実行した場合はtrue, しなかった場合はfalseを返す.
+void set_current_pose_as_trim(Meridim90Union &a_meridim, ServoParam &a_sv, HardwareSerial &a_serial) {
+  // TRIM値に現在値を加算する
+  for (int i = 0; i < MRD_SERVO_SLOTS; i++) {
+    a_sv.ixl_trim[i] += a_sv.ixl_tgt[i];
+    a_sv.ixr_trim[i] += a_sv.ixr_tgt[i]; 
+
+    a_sv.ixl_tgt[i] = 0;
+    a_sv.ixr_tgt[i] = 0;
+
+    a_meridim.sval[MRD_L_ORIGIDX + 1 + i * 2] = a_sv.ixl_tgt[i];
+    a_meridim.sval[MRD_R_ORIGIDX + 1 + i * 2] = a_sv.ixr_tgt[i];
+  }
+
+  Serial.println("=== Set current pose as trim ===");
+  print_servosettings(a_sv, Serial);
+
+  // サーボ動作を実行する. サーボは現在の角度をキープする
+  if (!MODE_ESP32_STANDALONE) {
+    mrd_servos_drive_lite(a_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, a_sv); // サーボ動作を実行する
+  }
+
+  // サーボ設定を格納する
+  for (int i = 0; i < MRD_SERVO_SLOTS; i++) {
+    a_meridim.sval[MRD_L_ORIGIDX + i * 2] = a_sv.ixl_tgt[i];
+    a_meridim.sval[MRD_R_ORIGIDX + i * 2] = a_sv.ixr_tgt[i];
+  }
+
+  // サーボの設定値とTRIM値をPCに送信する
+  UnionEEPROM array_tmp = mrd_eeprom_read();
+  for (int i = 0; i < MRDM_LEN; i++) {
+    a_meridim.sval[i] = array_tmp.saval[1][i];
+  }
+  a_meridim.sval[MRD_MASTER] = MCMD_EEPROM_BOARDTOPC_DATA1;
+
+  a_serial.println("send:");
+  for (int i = 0; i < MRDM_LEN; i++) {
+    a_serial.print(a_meridim.sval[i]);
+    a_serial.print(",");
+  }
+  a_serial.println();
+}
+
+
 /// @brief Master Commandの第1群を実行する. 受信コマンドに基づき, 異なる処理を行う.
 /// @param a_meridim 実行したいコマンドの入ったMeridim配列.(参照渡し)
 /// @param a_flg_exe Meridimの受信成功判定フラグ.
@@ -57,6 +104,7 @@ bool execute_master_command_1(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
     String tmp_msg = "cmd: set EEPROM data from current trim.[" + String(MCMD_EEPROM_SAVE_TRIM) + "]";
     Serial.println(tmp_msg);
 
+    #if 0
     // 空のUnionEEPROM構造体を作成し初期化
     UnionEEPROM array_tmp = {0};
 
@@ -81,7 +129,22 @@ bool execute_master_command_1(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
     //   a_serial.print(", ");
     // }
     // a_serial.println();
+    #endif
 
+    // 現在のポーズをトリム値として設定する
+    set_current_pose_as_trim(a_meridim, a_sv, a_serial);
+
+    // 書き込みデータの作成と書き込み
+    if (
+        mrd_eeprom_write(mrd_eeprom_make_data_from_config(a_sv), EEPROM_PROTECT, a_serial)) {
+      Serial.println("write EEPROM succeed.");
+    } else {
+      Serial.println("write EEPROM failed.");
+      return false;
+    };
+    return true;
+
+    #if 0
     // 書き込みデータの作成と書き込み
     if (mrd_eeprom_write(array_tmp, EEPROM_PROTECT, a_serial)) {
       a_serial.println("write EEPROM succeed.");
@@ -90,6 +153,7 @@ bool execute_master_command_1(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
       return false;
     }
     return true;
+    #endif
   }
 
   // コマンド:MCMD_EEPROM_LOAD_TRIM (10102) EEPROMからTRIM値を読み込んで設定
@@ -202,6 +266,7 @@ bool execute_master_command_3(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
     // EEPROMのデータを展開する
     mrd_eeprom_load_servosettings(a_sv, true, Serial);
 
+    #if 0
     // サーボをEEPROMのTRIM値で補正されたHOME(原点)に移動する
     for (int i = 0; i < MRD_SERVO_SLOTS; i++) {
       a_meridim.sval[MRD_L_ORIGIDX + 1 + i * 2] = 0; // L系統の目標値を原点に
@@ -216,43 +281,10 @@ bool execute_master_command_3(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
     if (!MODE_ESP32_STANDALONE) {
       mrd_servos_drive_lite(a_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, a_sv);
     }
+    #endif
 
-    // サーボの目標値として現在のTRIM値をセットする
-    for (int i = 0; i < MRD_SERVO_SLOTS; i++) {
-      a_meridim.sval[MRD_L_ORIGIDX + 1 + i * 2] = a_sv.ixl_trim[i];
-      a_meridim.sval[MRD_R_ORIGIDX + 1 + i * 2] = a_sv.ixr_trim[i];
-    }
-
-    // サーボのTRIM値をゼロリセットする
-    for (int i = 0; i < MRD_SERVO_SLOTS; i++) {
-      a_sv.ixl_trim[i] = 0;
-      a_sv.ixr_trim[i] = 0;
-    }
-
-    // サーボ動作を実行する. サーボはTRIM値を0としつつ, tgtとしてこれまでのTRIM値の角度をキープする
-    if (!MODE_ESP32_STANDALONE) {
-      mrd_servos_drive_lite(a_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, a_sv); // サーボ動作を実行する
-    }
-
-    // サーボ設定を格納する
-    for (int i = 0; i < MRD_SERVO_SLOTS; i++) {
-      a_meridim.sval[MRD_L_ORIGIDX + i * 2] = a_sv.ixl_trim[i];
-      a_meridim.sval[MRD_R_ORIGIDX + i * 2] = a_sv.ixr_trim[i];
-    }
-
-    // サーボの設定値とTRIM値をPCに送信する
-    UnionEEPROM array_tmp = mrd_eeprom_read();
-    for (int i = 0; i < MRDM_LEN; i++) {
-      a_meridim.sval[i] = array_tmp.saval[1][i];
-    }
-    a_meridim.sval[MRD_MASTER] = MCMD_EEPROM_BOARDTOPC_DATA1;
-
-    a_serial.println("send:");
-    for (int i = 0; i < MRDM_LEN; i++) {
-      a_serial.print(a_meridim.sval[i]);
-      a_serial.print(",");
-    }
-    a_serial.println();
+    // 現在のポーズをトリム値として設定する
+    set_current_pose_as_trim(a_meridim, a_sv, Serial);
 
     String tmp_msg = "cmd: enter trim setting mode and send EEPROM[1][*] to PC.[" + String(MCMD_START_TRIM_SETTING) + "]";
     Serial.println(tmp_msg);
