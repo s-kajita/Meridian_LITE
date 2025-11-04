@@ -146,19 +146,19 @@ void read_bno055() {
 
   // センサフュージョンによる方向推定値の取得と表示 - VECTOR_EULER - degrees
   imu::Vector<3> euler = ahrs.bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-  ahrs.read[12] = euler.y();                   // DMP_ROLL推定値
-  ahrs.read[13] = euler.z();                   // DMP_PITCH推定値
-  ahrs.yaw_source = euler.x();                 // ヨー軸のソースデータ保持
-  float yaw_tmp = euler.x() - ahrs.yaw_origin; // DMP_YAW推定値
+  ahrs.read[12] = -euler.z();                   // DMP_ROLL推定値
+  ahrs.read[13] = -euler.y();                   // DMP_PITCH推定値
+  ahrs.yaw_source = -euler.x();                 // ヨー軸のソースデータ保持
+  float yaw_tmp = ahrs.yaw_source - ahrs.yaw_origin; // DMP_YAW推定値
   if (yaw_tmp >= 180) {
     yaw_tmp = yaw_tmp - 360;
   } else if (yaw_tmp < -180) {
     yaw_tmp = yaw_tmp + 360;
   }
   ahrs.read[14] = yaw_tmp; // DMP_YAW推定値
-  ahrs.ypr[0] = ahrs.read[14];
+  ahrs.ypr[0] = ahrs.read[12];
   ahrs.ypr[1] = ahrs.read[13];
-  ahrs.ypr[2] = ahrs.read[12];
+  ahrs.ypr[2] = ahrs.read[14];
 
   // センサフュージョンの方向推定値のクオータニオン
   // imu::Quaternion quat = bno.getQuat();
