@@ -36,6 +36,7 @@ IcsHardSerialClass ics_R(&Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
 
 // ライブラリ導入
 #include <Arduino.h>
+#include <esp_wifi.h>
 
 // ハードウェアタイマーとカウンタ用変数の定義
 hw_timer_t *timer = NULL;                              // ハードウェアタイマーの設定
@@ -163,6 +164,8 @@ void setup() {
     // wifiIPの表示
     mrd_disp.esp_ip(MODE_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR);
   }
+  WiFi.setSleep(false);          // ESP32の省電力をOFFにする (jitter防止)
+  esp_wifi_set_ps(WIFI_PS_NONE); 
 
   // コントロールパッドの種類を表示
   mrd_disp.mounted_pad(MOUNT_PAD);
