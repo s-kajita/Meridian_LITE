@@ -238,8 +238,8 @@ void loop() {
       unsigned long current_tmp = millis();
       if (current_tmp - start_tmp >= UDP_TIMEOUT) {
         if (millis() > MONITOR_SUPPRESS_DURATION) { // 起動直後はエラー表示を抑制
-          // Serial.println(current_tmp - start_tmp);
-          //  Serial.println("UDP timeout");
+          Serial.print("UDP timeout [ms]: ");
+          Serial.println(current_tmp - start_tmp);
         }
         flg.udp_rcvd = false;
         break;
@@ -308,7 +308,7 @@ void loop() {
   //------------------------------------------------------------------------------------
   mrd.monitor_check_flow("[4]", monitor.flow); // デバグ用フロー表示
 
-  read_bno055();
+  read_bno055();     // 非スレッドでのIMUを読みこむ場合
   // @[4-1] センサ値のMeridimへの転記
   meriput90_ahrs(s_udp_meridim, ahrs.read, MOUNT_IMUAHRS); // BNO055_AHRS
 
@@ -422,6 +422,8 @@ void loop() {
 
   // @[13-1] count_timerがcount_frameに追いつくまで待機
   count_frame++;
+  
+  #if 0
   while (true) {
     if (xSemaphoreTake(timer_semaphore, 0) == pdTRUE) {
       portENTER_CRITICAL(&timer_mux);
@@ -431,6 +433,16 @@ void loop() {
         break;
       }
     }
+  }
+  #endif
+  
+  // ChatGPTによるジッタ改善
+  for (;;) {
+    xSemaphoreTake(timer_semaphore, portMAX_DELAY);
+    portENTER_CRITICAL(&timer_mux);
+    bool reached = (count_timer >= count_frame);
+    portEXIT_CRITICAL(&timer_mux);
+    if (reached) break;
   }
 
   // @[13-2] 必要に応じてフレームの遅延累積時間frameDelayをリセット
