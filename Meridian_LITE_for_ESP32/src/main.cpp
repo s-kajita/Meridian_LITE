@@ -164,7 +164,7 @@ void setup() {
     // wifiIPの表示
     mrd_disp.esp_ip(MODE_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR);
   }
-  WiFi.setSleep(false);          // ESP32の省電力をOFFにする (jitter防止)
+  WiFi.setSleep(false);          // ESP32の省電力をOFFにする (jitter改善)
   esp_wifi_set_ps(WIFI_PS_NONE); 
 
   // コントロールパッドの種類を表示
@@ -256,6 +256,17 @@ void loop() {
   if (mrd.cksm_rslt(r_udp_meridim.sval, MRDM_LEN)) // Check sum OK!
   {
     mrd.monitor_check_flow("CsOK", monitor.flow); // デバグ用フロー表示
+
+
+  // @[1-1] UDP送信の再実行
+  if (flg.udp_send_mode) // UDPの送信実施フラグの確認(モード確認)
+  {
+    flg.udp_busy = true; // UDP使用中フラグをアゲる
+    mrd_wifi_udp_send(s_udp_meridim.bval, MRDM_BYTE, udp);
+    flg.udp_busy = false; // UDP使用中フラグをサゲる
+    flg.udp_rcvd = false; // UDP受信完了フラグをサゲる
+  }
+
 
     // @[2-3] UDP受信配列から UDP送信配列にデータを転写
     memcpy(s_udp_meridim.bval, r_udp_meridim.bval, MRDM_LEN * 2);
@@ -439,7 +450,7 @@ void loop() {
   }
   #endif
   
-  // ChatGPTによるジッタ改善
+  // ChatGPTの提案に基づくジッタ改善
   for (;;) {
     xSemaphoreTake(timer_semaphore, portMAX_DELAY);
     portENTER_CRITICAL(&timer_mux);
