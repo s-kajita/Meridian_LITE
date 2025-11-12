@@ -204,7 +204,7 @@ void setup() {
 // MAIN LOOP
 //==================================================================================================
 void loop() {
-
+  unsigned long loop_start_time = millis();
   //------------------------------------------------------------------------------------
   //  [ 1 ] UDP送信
   //------------------------------------------------------------------------------------
@@ -258,6 +258,7 @@ void loop() {
     mrd.monitor_check_flow("CsOK", monitor.flow); // デバグ用フロー表示
 
 
+#if 0    
   // @[1-1] UDP送信の再実行
   if (flg.udp_send_mode) // UDPの送信実施フラグの確認(モード確認)
   {
@@ -266,7 +267,7 @@ void loop() {
     flg.udp_busy = false; // UDP使用中フラグをサゲる
     flg.udp_rcvd = false; // UDP受信完了フラグをサゲる
   }
-
+#endif
 
     // @[2-3] UDP受信配列から UDP送信配列にデータを転写
     memcpy(s_udp_meridim.bval, r_udp_meridim.bval, MRDM_LEN * 2);
@@ -424,6 +425,9 @@ void loop() {
 
   // @[12-2] エラーが出たサーボのインデックス番号を格納
   s_udp_meridim.ubval[MRD_ERR_l] = mrd_servos_make_errcode_lite(sv);
+
+  // 制御ループの開始時刻情報送信
+  s_udp_meridim.usval[MRD_USERDATA_80] = (unsigned short)loop_start_time;
 
   // @[12-3] チェックサムを計算して格納
   // s_udp_meridim.sval[MRD_CKSM] = mrd.cksm_val(s_udp_meridim.sval, MRDM_LEN);
