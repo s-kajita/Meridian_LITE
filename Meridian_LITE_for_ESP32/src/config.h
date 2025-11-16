@@ -116,7 +116,7 @@
 
 // Meridimの基本設定
 #define MRDM_LEN        90  // Meridim配列の長さ設定(デフォルトは90)
-#define FRAME_DURATION  20  // 1フレームあたりの単位時間(単位ms, デフォルトは10)
+#define FRAME_DURATION  10  // 1フレームあたりの単位時間(単位ms, デフォルトは10)
 #define CHARGE_TIME     200 // 起動時のコンデンサチャージ待機時間(単位ms)
 #define MRD_L_ORIGIDX   20  // Meridim配列のL系統の最初のインデックス(デフォルトは20)
 #define MRD_R_ORIGIDX   50  // Meridim配列のR系統の最初のインデックス(デフォルトは50)
@@ -134,7 +134,7 @@
 
 // Wifiの設定(SSID,パスワード等は別途keys.hで指定)
 #define MODE_FIXED_IP 0 // IPアドレスを固定するか(0:NO, 1:YES)
-#define UDP_TIMEOUT   4 // UDPの待受タイムアウト(単位ms,推奨値0)
+#define UDP_TIMEOUT   3 // UDPの待受タイムアウト(単位ms,推奨値0)
 
 // EEPROMの設定　(EEPROMの読み書きを止めるとモータ角度が表示されるようになった)
 #define EEPROM_SIZE    540 // 使用するEEPROMのサイズ(バイト)

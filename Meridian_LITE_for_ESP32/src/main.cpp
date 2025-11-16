@@ -149,10 +149,12 @@ void setup() {
   // I2Cの初期化と開始
   mrd_wire0_setup(BNO055_AHRS, I2C0_SPEED, ahrs, PIN_I2C0_SDA, PIN_I2C0_SCL);
 
-#if 0
+#if 1
   // I2Cスレッドの開始
+  #define I2C_TASK_PRIORITY 24       //Taskの優先度設定 最低0-最高24
+  #define ESP32_CORE_ID 0            //Taskを実行するコア番号 0,1   メインループのコア=1
   if (MOUNT_IMUAHRS == BNO055_AHRS) {
-    xTaskCreatePinnedToCore(mrd_wire0_Core0_bno055_r, "Core0_bno055_r", 4096, NULL, 2, &thp[0], 0);
+    xTaskCreatePinnedToCore(mrd_wire0_Core0_bno055_r, "Core0_bno055_r", 4096, NULL, I2C_TASK_PRIORITY, &thp[0], ESP32_CORE_ID);
     Serial.println("Core0 thread for BNO055 start.");
     delay(10);
   }
@@ -204,7 +206,22 @@ void setup() {
 // MAIN LOOP
 //==================================================================================================
 void loop() {
-  unsigned long loop_start_time = millis();
+  #if 0
+  while (true) {
+    if (xSemaphoreTake(timer_semaphore, 0) == pdTRUE) {
+      portENTER_CRITICAL(&timer_mux);
+      unsigned long now = count_timer; // ハードウェアタイマーの値を読む
+      portEXIT_CRITICAL(&timer_mux);
+      if (now >= count_frame) {
+        break;
+      }
+    }
+  }
+  #endif
+  unsigned long T_loop_start = millis();
+
+  imu_read_done = false;   // 別スレッドでIMUの読み込み開始
+
   //------------------------------------------------------------------------------------
   //  [ 1 ] UDP送信
   //------------------------------------------------------------------------------------
@@ -257,18 +274,6 @@ void loop() {
   {
     mrd.monitor_check_flow("CsOK", monitor.flow); // デバグ用フロー表示
 
-
-#if 0    
-  // @[1-1] UDP送信の再実行
-  if (flg.udp_send_mode) // UDPの送信実施フラグの確認(モード確認)
-  {
-    flg.udp_busy = true; // UDP使用中フラグをアゲる
-    mrd_wifi_udp_send(s_udp_meridim.bval, MRDM_BYTE, udp);
-    flg.udp_busy = false; // UDP使用中フラグをサゲる
-    flg.udp_rcvd = false; // UDP受信完了フラグをサゲる
-  }
-#endif
-
     // @[2-3] UDP受信配列から UDP送信配列にデータを転写
     memcpy(s_udp_meridim.bval, r_udp_meridim.bval, MRDM_LEN * 2);
 
@@ -318,14 +323,34 @@ void loop() {
   // @[3-1] MasterCommand group1 の処理
   execute_master_command_1(s_udp_meridim, flg.meridim_rcvd, sv, Serial);
 
+  unsigned long T_udp_received = millis();
+
   //------------------------------------------------------------------------------------
   //  [ 4 ] センサー類読み取り
   //------------------------------------------------------------------------------------
   mrd.monitor_check_flow("[4]", monitor.flow); // デバグ用フロー表示
 
-  read_bno055();     // 非スレッドでのIMUを読みこむ場合
+  //read_bno055();     // 非スレッドでのIMUを読みこむ場合
   // @[4-1] センサ値のMeridimへの転記
-  meriput90_ahrs(s_udp_meridim, ahrs.read, MOUNT_IMUAHRS); // BNO055_AHRS
+  //meriput90_ahrs(s_udp_meridim, ahrs.read, MOUNT_IMUAHRS); // BNO055_AHRS
+ 
+  #if 0
+  unsigned long t0 = millis();
+  while (true) {
+    unsigned long now = millis();
+    if (imu_read_done){
+      // BNO055 を読み終わっているので値を使う
+      break;    
+    }
+    else if (now - t0 >= 3) {
+      break;
+    }
+    delay(1);
+  }
+  meriput90_ahrs(s_udp_meridim, ahrs.read, MOUNT_IMUAHRS);
+  unsigned long T_sensor_read = millis();  
+  #endif
+ 
 
   //------------------------------------------------------------------------------------
   //  [ 5 ] リモコンの読み取り
@@ -414,6 +439,20 @@ void loop() {
 
   execute_master_command_3(s_udp_meridim, flg.meridim_rcvd, sv, Serial);
 
+  #if 1
+  unsigned long t0 = millis();
+  unsigned long now = t0;
+  while (now-t0 < 3) {
+    if (imu_read_done) break;  // BNO055 を読み終わっているので値を使う
+    delay(1);
+    now = millis();
+  }
+  imu_read_done = true;    // タイムアウト時でも読み終えたことにする
+  imu2ahrs();
+  meriput90_ahrs(s_udp_meridim, ahrs.read, MOUNT_IMUAHRS);
+  unsigned long T_sensor_read = millis();  
+  #endif
+
   //------------------------------------------------------------------------------------
   //  [ 12 ] UDP送信信号作成
   //------------------------------------------------------------------------------------
@@ -427,7 +466,10 @@ void loop() {
   s_udp_meridim.ubval[MRD_ERR_l] = mrd_servos_make_errcode_lite(sv);
 
   // 制御ループの開始時刻情報送信
-  s_udp_meridim.usval[MRD_USERDATA_80] = (unsigned short)loop_start_time;
+  s_udp_meridim.usval[MRD_USERDATA_80] = (unsigned short)T_loop_start;
+  s_udp_meridim.usval[MRD_USERDATA_81] = (unsigned short)T_udp_received;
+  s_udp_meridim.usval[MRD_USERDATA_82] = (unsigned short)T_sensor_read;
+  s_udp_meridim.usval[MRD_USERDATA_83] = (unsigned short)T_thread_time;
 
   // @[12-3] チェックサムを計算して格納
   // s_udp_meridim.sval[MRD_CKSM] = mrd.cksm_val(s_udp_meridim.sval, MRDM_LEN);
@@ -441,7 +483,7 @@ void loop() {
   // @[13-1] count_timerがcount_frameに追いつくまで待機
   count_frame++;
   
-  #if 0
+  #if 1
   while (true) {
     if (xSemaphoreTake(timer_semaphore, 0) == pdTRUE) {
       portENTER_CRITICAL(&timer_mux);
@@ -453,7 +495,8 @@ void loop() {
     }
   }
   #endif
-  
+
+  #if 0
   // ChatGPTの提案に基づくジッタ改善
   for (;;) {
     xSemaphoreTake(timer_semaphore, portMAX_DELAY);
@@ -462,6 +505,7 @@ void loop() {
     portEXIT_CRITICAL(&timer_mux);
     if (reached) break;
   }
+  #endif
 
   // @[13-2] 必要に応じてフレームの遅延累積時間frameDelayをリセット
   if (flg.count_frame_reset) {
