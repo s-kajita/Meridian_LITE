@@ -134,7 +134,7 @@ bool mrd_wire0_setup(ImuAhrsType a_imuahrs_type, int a_i2c0_speed, AhrsValue &a_
 #if 0
 /// @brief bno055のデータ取得.
 void read_bno055() {
-  // ジャイロセンサ値の取得 - VECTOR_GYROSCOPE - rad/s
+  // ジャイロセンサ値の取得 - VECTOR_GYROSCOPE - deg/s
   imu::Vector<3> gyroscope = ahrs.bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
   // センサフュージョンによる方向推定値の取得と表示 - VECTOR_EULER - degrees
   imu::Vector<3> euler = ahrs.bno.getVector(Adafruit_BNO055::VECTOR_EULER);
@@ -359,7 +359,7 @@ void mrd_wire0_Core0_bno055_r(void *args) {
 
     T_thread_time = millis();         // スレッドの同期確認用
 
-    // ジャイロセンサ値の取得- VECTOR_GYROSCOPE - rad/s
+    // ジャイロセンサ値の取得- VECTOR_GYROSCOPE - deg/s
     gyroscope = ahrs.bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
 
     // センサフュージョンによる方向推定値の取得 - VECTOR_EULER - degrees
