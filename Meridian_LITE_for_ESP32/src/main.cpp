@@ -45,6 +45,8 @@ portMUX_TYPE timer_mux = portMUX_INITIALIZER_UNLOCKED; // ハードウェアタ�
 unsigned long count_frame = 0;                         // フレーム処理の完了時にカウントアップ
 volatile unsigned long count_timer = 0;                // フレーム用タイマーのカウントアップ
 
+unsigned int error_messages = 0;                       //　エラーメッセージの表示回数カウント
+
 /// @brief count_timerを保護しつつ1ずつインクリメント
 void IRAM_ATTR frame_timer() {
   portENTER_CRITICAL_ISR(&timer_mux);
@@ -257,9 +259,13 @@ void loop() {
       // タイムアウト抜け処理
       unsigned long current_tmp = millis();
       if (current_tmp - start_tmp >= UDP_TIMEOUT) {
-        if (millis() > MONITOR_SUPPRESS_DURATION) { // 起動直後はエラー表示を抑制
+        if (millis() > MONITOR_SUPPRESS_DURATION && error_messages < MAX_ERROR_MESSAGES) { // エラー表示抑制(起動直後、最大エラー表示超過)
           Serial.print("UDP timeout [ms]: ");
           Serial.println(current_tmp - start_tmp);
+          error_messages++;
+          if (error_messages >= MAX_ERROR_MESSAGES) {
+            Serial.println("-- Suppress further messages --");
+          }
         }
         flg.udp_rcvd = false;
         break;

@@ -156,6 +156,7 @@
 #define MONITOR_SEQ               0    // シリアルモニタでシーケンス番号チェックを表示(0:OFF, 1:ON)
 #define MONITOR_PAD               0    // シリアルモニタでリモコンのデータを表示(0:OFF, 1:ON)
 #define MONITOR_SUPPRESS_DURATION 8000 // 起動直後のタイムアウトメッセージ抑制時間(単位ms)
+#define MAX_ERROR_MESSAGES        10   // タイムアウトメッセージ最大表示回数　
 
 // I2C設定, I2Cセンサ関連設定
 #define I2C0_SPEED       400000 // I2Cの速度(400kHz推奨)
