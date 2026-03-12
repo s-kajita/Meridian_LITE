@@ -20,15 +20,20 @@
 void set_current_pose_as_trim(Meridim90Union &a_meridim, ServoParam &a_sv, HardwareSerial &a_serial) {
   // TRIM値に現在値を加算する
   for (int i = 0; i < MRD_SERVO_SLOTS; i++) {
-    a_sv.ixl_trim[i] += a_sv.ixl_tgt[i];
-    a_sv.ixr_trim[i] += a_sv.ixr_tgt[i]; 
+    a_sv.ixl_trim[i] += a_sv.ixl_cw[i] * a_sv.ixl_tgt[i];
+    a_sv.ixr_trim[i] += a_sv.ixr_cw[i] * a_sv.ixr_tgt[i]; 
 
     a_sv.ixl_tgt[i] = 0;
     a_sv.ixr_tgt[i] = 0;
 
     a_meridim.sval[MRD_L_ORIGIDX + 1 + i * 2] = a_sv.ixl_tgt[i];
     a_meridim.sval[MRD_R_ORIGIDX + 1 + i * 2] = a_sv.ixr_tgt[i];
+
+    // GUIで指定された回転方向を設定
+    a_sv.ixl_cw[i] = (a_meridim.sval[MRD_L_ORIGIDX + i*2] & 0x100 ? 1:-1);
+    a_sv.ixr_cw[i] = (a_meridim.sval[MRD_R_ORIGIDX + i*2] & 0x100 ? 1:-1);
   }
+  Serial.println();
 
   Serial.println("=== Set current pose as trim ===");
   print_servosettings(a_sv, Serial);
@@ -133,6 +138,9 @@ bool execute_master_command_1(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
 
     // 現在のポーズをトリム値として設定する
     set_current_pose_as_trim(a_meridim, a_sv, a_serial);
+
+    //a_sv.ixl_trim[1] = 0.0;    // おかしくなったtrim値リセット用
+
 
     // 書き込みデータの作成と書き込み
     if (
