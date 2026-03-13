@@ -92,7 +92,7 @@ UnionEEPROM mrd_eeprom_read() {
 /// @return 終了時にtrueを返す.
 bool print_servosettings(ServoParam &a_sv, HardwareSerial &a_serial) {
   for (int i = 0; i < a_sv.num_max; i++) {
-    a_serial.print("L-idx:");
+    a_serial.print("L-id:");
     a_serial.print(mrd_pddstr(sv.ixl_id[i], 2, 0, false));
     //a_serial.print(", mt:");
     //a_serial.print(mrd_pddstr(sv.ixl_mount[i], 1, 0, false));
@@ -103,7 +103,7 @@ bool print_servosettings(ServoParam &a_sv, HardwareSerial &a_serial) {
     a_serial.print(", tgt:");
     a_serial.print(mrd_pddstr(sv.ixl_tgt[i], 7, 2, true));
 
-    a_serial.print(" | R-idx:");
+    a_serial.print(" | R-id:");
     a_serial.print(mrd_pddstr(sv.ixr_id[i], 2, 0, false));
     //a_serial.print(", mt:");
     //a_serial.print(mrd_pddstr(sv.ixr_mount[i], 1, 0, false));
@@ -125,8 +125,23 @@ bool print_servosettings(ServoParam &a_sv, HardwareSerial &a_serial) {
 /// @param a_serial 出力先シリアルの指定.
 /// @return 終了時にtrueを返す.
 bool mrd_eeprom_load_servosettings(ServoParam &a_sv, bool a_monitor, HardwareSerial &a_serial) {
-  a_serial.println("Load and set servo settings from EEPROM.");
+
   UnionEEPROM array_tmp = mrd_eeprom_read();
+  bool eeprom_ok = true;
+  for (int i = 0; i < a_sv.num_max; i++) {
+    // 各サーボID番号が正しく設定されているかを確認
+    eeprom_ok &= (i == static_cast<uint8_t>(array_tmp.saval[1][20 + i * 2] >> 1 & 0x007F)); // bit1–7:サーボID
+    eeprom_ok &= (i == static_cast<uint8_t>(array_tmp.saval[1][50 + i * 2] >> 1 & 0x007F)); // bit1–7:サーボID
+  }
+  if (!eeprom_ok){
+    a_serial.println("EEPROM data doesn't exist. Use default servo settings.");
+    return false;
+  }
+  else {
+    a_serial.println("--- EEPROM data exist.----");
+  }
+
+  a_serial.println("Load and set servo settings from EEPROM.");
   for (int i = 0; i < a_sv.num_max; i++) {
     // 各サーボのマウント有無
     a_sv.ixl_mount[i] = static_cast<bool>(array_tmp.saval[1][20 + i * 2] & 0x0001); // bit0:マウント有無
