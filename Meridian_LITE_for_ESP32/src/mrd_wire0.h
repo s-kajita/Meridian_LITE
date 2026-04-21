@@ -12,8 +12,8 @@
 extern volatile unsigned long count_timer;
 extern portMUX_TYPE timer_mux;
 
-volatile bool imu_read_done = true;         // BNO055読み完了フラグ
-unsigned long T_thread_time;                // スレッドの動作タイミング
+volatile bool imu_read_done = true; // BNO055読み完了フラグ
+unsigned long T_thread_time;        // スレッドの動作タイミング
 
 //==================================================================================================
 //  I2C wire0 関連の処理
@@ -197,7 +197,7 @@ void read_bno055() {
 
 #if 1
 /// @brief bno055のデータ取得.
-imu::Vector<3> gyroscope; 
+imu::Vector<3> gyroscope;
 imu::Vector<3> euler;
 imu::Vector<3> accelerometer;
 imu::Vector<3> magnetometer;
@@ -214,18 +214,18 @@ void read_bno055() {
   accelerometer = ahrs.bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
 
   // 磁力センサ値の取得と表示  - VECTOR_MAGNETOMETER - uT
-  //magnetometer = ahrs.bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
+  // magnetometer = ahrs.bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
 
   // センサフュージョンの方向推定値のクオータニオン
-  //quat = bno.getQuat();
+  // quat = bno.getQuat();
 }
 
-void imu2ahrs(){
+void imu2ahrs() {
   // 加速度センサ読み取り失敗（全要素0）時は、前回のデータを使用
   float ax = (float)accelerometer.x();
   float ay = (float)accelerometer.y();
   float az = (float)accelerometer.z();
-  if( ax!=0.0 || ay!=0.0 || az!=0.0 ){
+  if (ax != 0.0 || ay != 0.0 || az != 0.0) {
     ahrs.read[0] = ax;
     ahrs.read[1] = ay;
     ahrs.read[2] = az;
@@ -235,19 +235,19 @@ void imu2ahrs(){
   ahrs.read[4] = gyroscope.y();
   ahrs.read[5] = gyroscope.z();
 
-  //ahrs.read[6] = magnetometer.x();
-  //ahrs.read[7] = magnetometer.y();
-  //ahrs.read[8] = magnetometer.z();
+  // ahrs.read[6] = magnetometer.x();
+  // ahrs.read[7] = magnetometer.y();
+  // ahrs.read[8] = magnetometer.z();
 
   float euler_x = euler.x();
   float euler_y = euler.y();
   float euler_z = euler.z();
 
   // 加速度センサ読み取り失敗（全要素0）時は、前回のデータを使用
-  if(euler_x!=0.0 || euler_y!=0.0 || euler_z!=0.0){
-    ahrs.read[12] = -euler_z;                   // DMP_ROLL推定値
-    ahrs.read[13] = -euler_y;                   // DMP_PITCH推定値
-    ahrs.yaw_source = -euler_z;                 // ヨー軸のソースデータ保持
+  if (euler_x != 0.0 || euler_y != 0.0 || euler_z != 0.0) {
+    ahrs.read[12] = -euler_z;                          // DMP_ROLL推定値
+    ahrs.read[13] = -euler_y;                          // DMP_PITCH推定値
+    ahrs.yaw_source = -euler_x;                        // ヨー軸のソースデータ保持
     float yaw_tmp = ahrs.yaw_source - ahrs.yaw_origin; // DMP_YAW推定値
     if (yaw_tmp >= 180) {
       yaw_tmp = yaw_tmp - 360;
@@ -353,11 +353,11 @@ void mrd_wire0_Core0_bno055_r(void *args) {
 // オーバーヘッド低減のため、read_bno055()を用いず直接APIを呼び出す
 void mrd_wire0_Core0_bno055_r(void *args) {
   while (true) {
-    while (imu_read_done) {     // フラグがfalseになるまで待機
-      vTaskDelay(1);  // 他タスクにコアをゆずる
+    while (imu_read_done) { // フラグがfalseになるまで待機
+      vTaskDelay(1);        // 他タスクにコアをゆずる
     }
 
-    T_thread_time = millis();         // スレッドの同期確認用
+    T_thread_time = millis(); // スレッドの同期確認用
 
     // ジャイロセンサ値の取得- VECTOR_GYROSCOPE - deg/s
     gyroscope = ahrs.bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
